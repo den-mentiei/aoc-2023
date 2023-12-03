@@ -22,12 +22,9 @@ fn solve(input: &str) -> (i32, i32) {
 			let s         = s.strip_prefix("Game ")?;
 			let (id, s)   = s.split_once(": ")?;
 			let id        = id.parse::<i32>().ok()?;
-			let mut worst = [0, 0, 0];
-			let legit     = s
+			let worst     = s
 				.split(';')
-				.map(|d| {
-					let mut cubes = [0, 0, 0];
-					d
+				.map(|r| r
 						.split(',')
 						.filter_map(|s| {
 							let (k, c) = s.trim_start().split_once(' ')?;
@@ -35,13 +32,18 @@ fn solve(input: &str) -> (i32, i32) {
 							let c = parse_color(c);
 							Some((k, c))
 						})
-						.for_each(|(k, c)| {
-							cubes[c] += k;
-							worst[c] = worst[c].max(k);
-						});
-					cubes[0] <= LIMITS[0] && cubes[1] <= LIMITS[1] && cubes[2] <= LIMITS[2]
-				})
-				.fold(true, |acc, legit| acc && legit);
+						.fold([0, 0, 0], |mut acc, (k, c)| {
+							acc[c] = acc[c].max(k);
+							acc
+						})
+				)
+				.fold([0, 0, 0], |mut acc, cubes| {
+					acc[0] = acc[0].max(cubes[0]);
+					acc[1] = acc[1].max(cubes[1]);
+					acc[2] = acc[2].max(cubes[2]);
+					acc
+				});
+			let legit = worst[0] <= LIMITS[0] && worst[1] <= LIMITS[1] && worst[2] <= LIMITS[2];
 			let power = worst[0] * worst[1] * worst[2];
 			Some((id, legit, power))
 		})
