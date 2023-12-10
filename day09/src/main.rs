@@ -7,48 +7,31 @@ fn main() -> Result<()> {
 	let mut input = String::new();
 	io::stdin().read_to_string(&mut input)?;
 
-	let p1 = part1(&input);
+	let (p1, p2) = solve(&input);
 	println!("p1 = {p1}");
-	let p2 = part2(&input);
 	println!("p2 = {p2}");
 
 	Ok(())
 }
 
-fn part1(input: &str) -> i32 {
-	input
+fn solve(input: &str) -> (i32, i32) {
+	let (p1, p2) = input
 		.lines()
-		.map(|s| solve(s.split_whitespace().filter_map(|s| s.parse::<i32>().ok()).collect()))
-		.sum()
-}
+		.map(|s| s.split_whitespace().filter_map(|s| s.parse().ok()).collect())
+		.map(|mut s: Vec<i32>| {
+			s.insert(0, 0);
+			s.push(0);
 
-fn part2(input: &str) -> i32 {
-	input
-		.lines()
-		.map(|s| {
-			let mut seq: Vec<_> = s.split_whitespace().filter_map(|s| s.parse::<i32>().ok()).collect();
-			seq.reverse();
-			solve(seq)
+			let mut n = s.len();
+			while n > 2 {
+				for i in 1..n { s[i - 1] = s[i] - s[i - 1]; }
+				n -= 1;
+			}
+
+			(-s[1], -s[0])
 		})
-		.sum()
-}
-
-fn solve(mut seq: Vec<i32>) -> i32 {
-	let mut n = seq.len();
-	loop {
-		let mut z = true;
-		for i in 1..n {
-			seq[i - 1] = seq[i] - seq[i - 1];
-			z = z && seq[i - 1] == 0;
-		}
-		n -= 1;
-		if z { break }
-	}
-	while n < seq.len() {
-		seq[n] += seq[n - 1];
-		n += 1;
-	}
-	seq[n - 1]
+		.fold((0, 0), |(s1, s2), (p1, p2)| (s1 + p1, s2 + p2));
+	(p1, p2.abs())
 }
 
 #[cfg(test)]
@@ -61,11 +44,11 @@ mod tests {
 
 	#[test]
 	fn test_part1() {
-		assert_eq!(part1(INPUT), 114);
+		assert_eq!(solve(INPUT).0, 114);
 	}
 
 	#[test]
 	fn test_part2() {
-		assert_eq!(part2(INPUT), 2);
+		assert_eq!(solve(INPUT).1, 2);
 	}
 }
