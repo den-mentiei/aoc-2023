@@ -121,7 +121,7 @@ where
 fn parse(input: &str) -> (Vec<u8>, usize) {
 	let w = input.bytes().position(|b| b == b'\n').unwrap();
 	let h = input.trim_end().len() / w;
-	assert_eq!(w, h);
+	debug_assert_eq!(w, h);
 
 	let mut map = vec![0u8; w * w];
 
