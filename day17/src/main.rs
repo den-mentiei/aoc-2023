@@ -1,4 +1,5 @@
 use std::collections::BinaryHeap;
+use std::cmp::Reverse as Rev;
 use std::io::{self, Read};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -15,60 +16,71 @@ fn main() -> Result<()> {
 	Ok(())
 }
 
-fn solve(input: &str) -> (i32, i32) {
+fn solve(input: &str) -> (u32, u32) {
 	let b = input.as_bytes();
 	let w = b.iter().position(|&x| x == b'\n').unwrap();
-	let h = input.trim_end().len() / w;
 
-	let p1 = dijkstra(b, w, h, 1, 3);
-	let p2 = dijkstra(b, w, h, 4, 10);
+	let p1 = dijkstra(b, w, 1, 3);
+	let p2 = dijkstra(b, w, 4, 10);
 
 	(p1, p2)
 }
 
-fn dijkstra(map: &[u8], w: usize, h: usize, min: i8, max: i8) -> i32 {
-	const DIR: [(i8, i8); 4] = [(-1, 0), (0, 1), (0, -1), (1, 0)];
+fn dijkstra(map: &[u8], w: usize, min: u8, max: u8) -> u32 {
+	let n = map.len();
 
-	let mut dists = vec![i32::MAX; w * h * 4];
-	let mut front = BinaryHeap::from_iter([(0, (0, 0, 0))]);
+	let mut seen = vec![0u8; n];
+	let mut cost = vec![u32::MAX; 2 * n]; // vertical | horizontal
 
-	while let Some((cost, (r, c, d))) = front.pop() {
-		if (r, c) == ((h - 1) as i16, (w - 1) as i16) {
-			return -cost;
-		}
+	let mut q = BinaryHeap::new();
+	q.push((Rev(0), 0, 0));
+	q.push((Rev(0), 0, 1));
 
-		let didx = r as usize * w * 4 + c as usize * 4 + d as usize;
-		if -dists[didx] > c as i32 {
-			continue;
-		}
+	let next = |p: usize, d: u8| Some(match d {
+		0 if p > w                  => p - w - 1, // n
+		1 if (p + 1) % (w + 1) != w => p + 1,     // e
+		2 if p < n - (w + 1)        => p + w + 1, // s
+		3 if p % (w + 1) != 0       => p - 1,     // w
+		_ => return None,
+	});
 
-		for (nd, &(dr, dc)) in DIR.iter().enumerate() {
-			let nd = nd as i8;
-			// don't go backward or further than max steps
-			if d == nd || d == (4 - nd - 1) { continue; }
+	while let Some((Rev(c), p, d)) = q.pop() {
+		// bottom-right corner
+		if p == n - 2 { return c; }
 
-			let mut ncost = -cost;
+		if seen[p] & (1 << d) != 0 { continue; }
+		seen[p] |= 1 << d;
+
+		// n    e    w
+		// 0 -> 1 -> 3
+		// e    n    s
+		// 1 -> 0 -> 2
+		// s    w    e
+		// 2 -> 3 -> 1
+		// w    s    n
+		// 3 -> 2 -> 0
+		let od = d ^ 1; // orientation: vertical or horizontal
+		for nd in [od, od ^ 2] {
+			let mut sum = 0;
+			let mut np  = p;
 			for dist in 1..=max {
-				let nr = (r + (dr * dist) as i16) as usize;
-				let nc = (c + (dc * dist) as i16) as usize;
-				if nr >= h || nc >= w { continue; }
-
-				ncost += (map[nr * (w + 1) + nc] - b'0') as i32;
-				if dist < min {
-					continue;
-				}
-
-				let k = (nr as i16, nc as i16, nd);
-				let d = nr as usize * w * 4 + nc as usize * 4 + nd as usize;
-				if ncost < dists[d] {
-					dists[d] = ncost;
-					front.push((-ncost, k));
+				if let Some(op) = next(np, nd) {
+					sum += (map[op] - b'0') as u32;
+					if dist >= min {
+						let nc = c + sum;
+						let i  = (op << 1) | od as usize;
+						if cost[i] > nc {
+							cost[i] = nc;
+							q.push((Rev(nc), op, od));
+						}
+					}
+					np = op;
 				}
 			}
 		}
 	}
 
-	unreachable!()
+	0
 }
 
 #[cfg(test)]
