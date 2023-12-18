@@ -24,25 +24,23 @@ fn part2(input: &str) -> i64 {
 }
 
 fn solve(input: &str, parse: fn(&str) -> (u8, i64)) -> i64 {
-	let mut p   = (0i64, 0i64);
-	let mut peri = 0;
+	let (mut r, mut c) = (0, 0);
 	let mut area = 0;
 
 	for l in input.lines() {
 		let (d, n) = parse(l);
-		let np = match d {
-			0 => (p.0 + n, p.1),
-			1 => (p.0,     p.1 + n),
-			2 => (p.0 - n, p.1),
-			3 => (p.0,     p.1 - n),
+		let (pr, pc) = (r, c);
+		match d {
+			0 => r -= n,
+			1 => c += n,
+			2 => r += n,
+			3 => c -= n,
 			_    => unreachable!(),
 		};
-		area += np.1 * (p.0 - np.0);
-		peri += n;
-		p    = np;
+		area += (c + pc) * (r - pr) + n;
 	}
 
-	area + peri / 2 + 1
+	area / 2 + 1
 }
 
 fn parse1(s: &str) -> (u8, i64) {
