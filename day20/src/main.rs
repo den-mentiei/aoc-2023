@@ -1,3 +1,6 @@
+use std::fs;
+use std::env;
+use std::fmt::Write;
 use std::collections::{HashMap, VecDeque};
 use std::io::{self, Read};
 
@@ -8,7 +11,15 @@ fn main() -> Result<()> {
 	let mut input = String::new();
 	io::stdin().read_to_string(&mut input)?;
 
-	let nodes = parse(&input);
+	let (ids, nodes) = parse(&input);
+
+	if env::args().nth(1).is_some() {
+		let dot = generate_dot(&ids, &nodes);
+		fs::write("graph.dot", dot)?;
+		println!("Saved an input visualization, use it like this:");
+		println!("dot -Tsvg graph.dot -o graph.svg");
+	}
+
 	let p1 = part1(&nodes);
 	println!("p1 = {p1}");
 	let p2 = part2(&nodes);
@@ -69,7 +80,7 @@ fn part1(nodes: &[(u8, Vec<usize>)]) -> u64 {
 }
 
 fn part2(nodes: &[(u8, Vec<usize>)]) -> u64 {
-	let mut xs = Vec::new();
+	let mut prod = 1;
 	for &n in &nodes[0].1 {
 		let mut x = 0;
 		let mut b = 0;
@@ -79,7 +90,7 @@ fn part2(nodes: &[(u8, Vec<usize>)]) -> u64 {
 		// everything else is zeros.
 		while let Some(n) = i {
 			let (_, ns) = &nodes[n];
-			if ns.len() == 2 || nodes[ns[0]].0 == 2 {
+			if ns.iter().any(|&n| nodes[n].0 == 2) {
 				x |= 1 << b;
 			}
 			b += 1;
@@ -90,31 +101,12 @@ fn part2(nodes: &[(u8, Vec<usize>)]) -> u64 {
 				.copied();
 		}
 
-		xs.push(x);
+		prod *= x;
 	}
-
-	xs.into_iter().reduce(lcm).unwrap_or_default()
+	prod
 }
 
-fn lcm(first: u64, second: u64) -> u64 {
-    first * second / gcd(first, second)
-}
-
-fn gcd(first: u64, second: u64) -> u64 {
-    let mut max = first.max(second);
-    let mut min = first.min(second);
-
-    loop {
-        let x = max % min;
-        if x == 0 {
-            return min;
-        }
-        max = min;
-        min = x;
-    }
-}
-
-fn parse(input: &str) -> Vec<(u8, Vec<usize>)> {
+fn parse(input: &str) -> (Vec<&str>, Vec<(u8, Vec<usize>)>) {
 	fn get_or_add_id<'s>(id: &'s str, ids: &mut Vec<&'s str>) -> usize {
 		if let Some(i) = ids.iter().position(|&s| s == id) {
 			i
@@ -153,8 +145,48 @@ fn parse(input: &str) -> Vec<(u8, Vec<usize>)> {
 		}
 	}
 
-	nodes
+	(ids, nodes)
 }
+
+fn generate_dot(ids: &[&str], nodes: &[(u8, Vec<usize>)]) -> String {
+	let mut buf = String::with_capacity(ids.len() * 16);
+
+	_ = writeln!(&mut buf, "digraph {{");
+	_ = writeln!(&mut buf, "  {{");
+	_ = writeln!(&mut buf, "    broadcaster [shape=oval]");
+
+	let mut write_shapes = |t: u8, s: &str| {
+		let nodes = nodes
+			.iter()
+			.enumerate()
+			.filter(|&(_, &(ty, _))| ty == t)
+			.map(|(i, _)| i);
+		_ = write!(&mut buf, "    ");
+		for (i, id) in nodes.enumerate() {
+			if i != 0 {
+				_ = write!(&mut buf, ", ");
+			}
+			_ = write!(&mut buf, "{}", ids[id]);
+		}
+		_ = writeln!(&mut buf, " [shape={}]", s);
+	};
+	write_shapes(1, "diamond");
+	write_shapes(2, "invhouse");
+	_ = writeln!(&mut buf, "    rx [shape=oval]");
+
+	for (i, (_, ns)) in nodes.iter().enumerate() {
+		for &n in ns {
+			_ = writeln!(&mut buf, "    {} -> {}", ids[i], ids[n]);
+		}
+	}
+
+	_ = writeln!(&mut buf, "  }}");
+
+	_ = writeln!(&mut buf, "}}");
+
+	buf
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -176,7 +208,7 @@ mod tests {
 
 	#[test]
 	fn test_part1() {
-		assert_eq!(part1(&parse(INPUT1)), 32000000);
-		assert_eq!(part1(&parse(INPUT2)), 11687500);
+		assert_eq!(part1(&parse(INPUT1).1), 32000000);
+		assert_eq!(part1(&parse(INPUT2).1), 11687500);
 	}
 }
