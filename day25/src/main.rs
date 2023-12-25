@@ -1,3 +1,5 @@
+use std::collections::{BinaryHeap, HashMap, VecDeque};
+use std::cmp::Reverse as Rev;
 use std::io::{self, Read};
 
 use rand::Rng;
@@ -17,8 +19,8 @@ fn main() -> Result<()> {
 
 fn part1(input: &str) -> usize {
 	let mut ids   = Vec::new();
-	let mut edges = Vec::new();
 	let mut adj   = Vec::new();
+	let mut edges = 0;
 
 	let mut get_or_add_id = |id, adj: &mut Vec<_>| {
 		if let Some(i) = ids.iter().position(|&s| s == id) {
@@ -32,89 +34,97 @@ fn part1(input: &str) -> usize {
 	};
 
 	for s in input.lines() {
-		let id = get_or_add_id(&s[..3], &mut adj);
-		for n in s[5..].split(' ') {
-			let nid = get_or_add_id(n, &mut adj);
-			let e = edges.len();
-			edges.push((id, nid));
-			adj[id].push((nid, e));
-			adj[nid].push((id, e));
+		let u = get_or_add_id(&s[..3], &mut adj);
+		for v in s[5..].split(' ') {
+			let v = get_or_add_id(v, &mut adj);
+			adj[u].push((v, edges));
+			adj[v].push((u, edges));
+			edges += 1;
 		}
 	}
 
-	let (c0, c1) = karger(&edges, ids.len());
+	let n = ids.len();
 
-	c0 * c1
-}
+	let mut freq = HashMap::<u32, u32>::new();
 
-fn karger(edges: &[(usize, usize)], n: usize) -> (usize, usize) {
-	let mut rng = rand::thread_rng();
+	let mut rng  = rand::thread_rng();
 
-	loop {
-		let mut ds  = DisjointSet::new(n);
-		let mut v   = Vec::new();
-		let m       = edges.len();
-		for _ in 2..n {
-			v.clear();
-			v.extend((0..m).filter(|&i| ds.distinct(edges[i].0, edges[i].1)));
-			let e = v[rng.gen_range(0..v.len())];
-			let (s, t) = edges[e];
-			ds.union(s, t);
+	let mut cost = vec![u32::MAX; n];
+	let mut q    = BinaryHeap::new();
+
+	let mut seen = vec![false; n];
+	let mut dfsq = VecDeque::new();
+
+	let c0 = loop {
+		for _ in 0..80 {
+			let src = rng.gen_range(0..n);
+			let dst = loop {
+				let i = rng.gen_range(0..n);
+				if i != src {
+					break i;
+				}
+			};
+
+			cost.fill(u32::MAX);
+
+			q.clear();
+			q.push((Rev(0), src));
+			cost[src] = 0;
+
+			while let Some((Rev(c), u)) = q.pop() {
+				if u == dst {
+					break;
+				}
+
+				for &(v, e) in &adj[u] {
+					let nc = c + 1;
+					if nc < cost[v] {
+						cost[v] = nc;
+						*freq.entry(e).or_default() += 1;
+						q.push((Rev(nc), v));
+					}
+				}
+			}
 		}
-		let cut = (0..m)
-			.filter(|&i| ds.distinct(edges[i].0, edges[i].1))
-			.collect::<Vec<_>>();
-		if cut.len() == 3 {
-			let p0 = ds.find(edges[cut[0]].0);
-			let c0 = ds.count[p0];
-			let p1 = ds.find(edges[cut[0]].1);
-			let c1 = ds.count[p1];
-			return (c0, c1)
+
+		let mut cut = [(0, 0); 3];
+		for (&k, &v) in freq.iter() {
+			if v > cut[0].1 {
+				cut[2] = cut[1];
+				cut[1] = cut[0];
+				cut[0] = (k, v);
+			} else if v > cut[1].1 {
+				cut[2] = cut[1];
+				cut[1] = (k, v);
+			} else if v > cut[2].1 {
+				cut[2] = (k, v);
+			}
 		}
-	}
-}
+		let (e0, e1, e2) = (cut[0].0, cut[1].0, cut[2].0);
 
-#[derive(Debug)]
-struct DisjointSet {
-	parent: Vec<usize>,
-	count:  Vec<usize>,
-}
+		let mut c0 = 0;
+		seen.fill(false);
 
-impl DisjointSet {
-	fn new(n: usize) -> Self {
-		Self {
-			parent: (0..n).collect(),
-			count: vec![1; n],
+		dfsq.clear();
+		dfsq.push_back(0);
+		while let Some(u) = dfsq.pop_front() {
+			for &(v, e) in &adj[u] {
+				if e != e0 && e != e1 && e != e2 {
+					if seen[v] { continue }
+					seen[v] = true;
+					c0 += 1;
+					dfsq.push_back(v);
+				}
+			}
 		}
-	}
 
-	fn distinct(&mut self, x: usize, y: usize) -> bool {
-		self.find(x) != self.find(y)
-	}
-
-	fn find(&mut self, i: usize) -> usize {
-		let mut i = i;
-		while self.parent[i] != i {
-			let p = self.parent[self.parent[i]];
-			self.parent[i] = p;
-			i = p;
+		if c0 != n {
+			break c0;
 		}
-		i
-	}
+		// println!("doing more sampling");
+	};
 
-	fn union(&mut self, x: usize, y: usize) {
-		let px = self.find(x);
-		let py = self.find(y);
-		if px == py { return }
-
-		if self.count[px] <= self.count[py] {
-			self.parent[px] = py;
-			self.count[py] += self.count[px];
-		} else {
-			self.parent[py] = px;
-			self.count[px] += self.count[py];
-		}
-	}
+	c0 * (n - c0)
 }
 
 #[cfg(test)]

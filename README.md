@@ -203,3 +203,8 @@ It just cuts the edges to break the graph into components, while
 tracking those via disjoint-set.
 
 A faster thing is surely possible.
+
+Updated: removed the Karger as it was too slow. Replaced by a
+randomized sampling, which just looks for the shortest path (Dijkstra)
+between 2 random vertices multiple times and counts the frequence of
+edge usage. It turns out that min-cut edges are *most* used ones.
