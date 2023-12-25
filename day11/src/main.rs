@@ -58,7 +58,7 @@ fn solve(input: &str, expand: usize) -> i64 {
 		let (x0, y0) = (gs[i].0 as i64, gs[i].1 as i64);
 		for j in i + 1..n {
 			let (x1, y1) = (gs[j].0 as i64, gs[j].1 as i64);
-			let d  = (x0 - x1).abs() + (y0 - y1).abs(); // manhattan distance
+			let d = (x0 - x1).abs() + (y0 - y1).abs(); // manhattan distance
 			sum += d;
 		}
 	}

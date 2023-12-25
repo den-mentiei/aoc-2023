@@ -28,7 +28,7 @@ fn solve(input: &str, parse: fn(&str) -> (u8, i64)) -> i64 {
 	let mut area = 0;
 
 	for l in input.lines() {
-		let (d, n) = parse(l);
+		let (d, n)   = parse(l);
 		let (pr, pc) = (r, c);
 		match d {
 			0 => r -= n,

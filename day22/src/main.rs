@@ -41,7 +41,7 @@ fn solve(input: &str) -> (usize, usize) {
 	let mut temp = HashSet::new();
 
 	for (i, &[x0, y0, z0, x1, y1, z1]) in bricks.iter().enumerate() {
-		let mut top  = 0;
+		let mut top = 0;
 
 		for x in x0..=x1 {
 			for y in y0..=y1 {
@@ -84,8 +84,7 @@ fn solve(input: &str) -> (usize, usize) {
 		ind[j] += 1;
 	}
 	let mut indw = ind.clone();
-
-	let mut q   = VecDeque::new();
+	let mut q    = VecDeque::new();
 	for i in 0..bricks.len() {
 		q.push_back(i);
 		while let Some(x) = q.pop_front() {
