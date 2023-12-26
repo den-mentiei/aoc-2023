@@ -5,33 +5,6 @@ Hello, sailor! This year, I have solved it in Rust.
 A picture by [u/edo360](https://www.reddit.com/r/adventofcode/comments/18r118x/2023_day_0125_thank_you_all/)
 ![2023 visualization](/vis.jpg)
 
-## Routine
-
-Start a day with the following:
-```bash
-$ ./day
-```
-
-This will bootstrap today's solution and download the inputs.
-Template is contained in `boilerplate.rs`.
-
-If you skipped a day, you can still do it via:
-```bash
-$ ./day <day-number>
-```
-
-## Setup
-
-To download task inputs, the session cookie is required.
-You can get one inspecting the headers of AOC website response,
-when you are logged in.
-
-Day script looks for it in `.env` file, in the following form:
-
-```bash
-KEY=<long alphanumeric string you have in your aoc cookies>
-```
-
 ## Notes
 
 ### Day 01
