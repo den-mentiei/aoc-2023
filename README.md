@@ -2,9 +2,12 @@
 
 Hello, sailor! This year, I have solved it in Rust.
 
+A picture by [u/edo360](https://www.reddit.com/r/adventofcode/comments/18r118x/2023_day_0125_thank_you_all/)
+![2023 visualization](/vis.jpg)
+
 ## Routine
 
-Star a day with the following:
+Start a day with the following:
 ```bash
 $ ./day
 ```
